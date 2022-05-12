@@ -1,0 +1,303 @@
+# Copyright (c) 2021 Li Auto Company. All rights reserved.
+
+model_name: SceneTransformerPredictor
+
+log_every_n_steps: 20
+
+training:
+  sample_database_folder: "/lpai/volumes/pfs/prediction/WOD/processed_new_feature_2021_1228/waymo_pb_close_logs_1123_train_predict_id_fixedtimeembed/"
+  batch_size: 8 # 11 for 40G, 8 for 30G
+  loader_worker_num: 4
+  epoch: 150
+
+validation:
+  sample_database_folder: "/lpai/volumes/pfs/prediction/WOD/processed_new_feature_2021_1228/validation_online_pb_fixedtimeembed/"
+  batch_size: 8
+  loader_worker_num: 4
+  check_interval: 0.1
+  limit_batches: 0.1
+
+test:
+  # sample_database_folder: "/lpai/volumes/pfs/prediction/WOD/processed_new_feature_2021_1228/test_online_pb_fixedtimeembed/"
+  sample_database_folder: "/mnt/data/xuleimeng/validation_online_pb_fixedtimeembed/"
+  batch_size: 8
+  loader_worker_num: 4
+  test_result_pkl_dir: "/home/xuleimeng/Desktop/test_output"
+  type: "pkl" # 'svg' or 'pkl'
+
+loss:
+  intention_loss_wgt: 0.2
+  traj_loss_wgt: 0.8
+  type: "marginal_agent_only" # "joint" or "marginal" or "marginal_agent_only"
+
+optim:
+  init_lr: 0.0001
+  step_size: 1
+  step_factor: 0.2
+  gradient_clip_val: 5.0 # empty (means None) or float num
+  gradient_clip_algorithm: "norm"
+
+model:
+  preprocessor:
+    type: "AgentCoord"
+    rot_present: False
+
+  context_encoder:
+    type: "ContextEncoderSceneTransformer"
+
+    actor_encoder_layers:
+      - in_size: 16
+        hidden_size: 256
+        norm_type: "BN"
+        active_func: "ReLU"
+      - in_size: 256
+        hidden_size: 256
+        norm_type: "BN"
+        active_func: "none"
+
+    lane_cluster_layers:
+      - in_size: 16
+        hidden_size: 256
+      - in_size: 512
+        hidden_size: 256
+      - in_size: 512
+        hidden_size: 256
+
+    d_layers_time:
+      - self_atten:
+          type: "DotProdMultiHead"
+          in_size: 256
+          out_size: 256
+          head_num: 1
+        ff:
+          in_size: 256
+          hidden_size: 256
+          out_size: 256
+
+    e_layers_agent:
+      - self_atten:
+          type: "DotProdMultiHead"
+          in_size: 256
+          out_size: 256
+          head_num: 1
+        ff:
+          in_size: 256
+          hidden_size: 256
+          out_size: 256
+
+    f_layers_time:
+      - self_atten:
+          type: "DotProdMultiHead"
+          in_size: 256
+          out_size: 256
+          head_num: 1
+        ff:
+          in_size: 256
+          hidden_size: 256
+          out_size: 256
+
+    g_layers_agent:
+      - self_atten:
+          type: "DotProdMultiHead"
+          in_size: 256
+          out_size: 256
+          head_num: 1
+        ff:
+          in_size: 256
+          hidden_size: 256
+          out_size: 256
+
+    h_layers_time:
+      - self_atten:
+          type: "DotProdMultiHead"
+          in_size: 256
+          out_size: 256
+          head_num: 1
+        ff:
+          in_size: 256
+          hidden_size: 256
+          out_size: 256
+
+    i_layers_agent:
+      - self_atten:
+          type: "DotProdMultiHead"
+          in_size: 256
+          out_size: 256
+          head_num: 1
+        ff:
+          in_size: 256
+          hidden_size: 256
+          out_size: 256
+
+    j_layers_agent2staticrg_time:
+      - cross_atten:
+          type: "DotProdMultiHead"
+          src_size: 256
+          dst_size: 256
+          out_size: 256
+          head_num: 1
+        ff:
+          in_size: 256
+          hidden_size: 256
+          out_size: 256
+
+    k_layers_agent2dynamicrg_time:
+      - cross_atten:
+          type: "DotProdMultiHead"
+          src_size: 256
+          dst_size: 256
+          out_size: 256
+          head_num: 1
+        ff:
+          in_size: 256
+          hidden_size: 256
+          out_size: 256
+
+    l_layers_time:
+      - self_atten:
+          type: "DotProdMultiHead"
+          in_size: 256
+          out_size: 256
+          head_num: 1
+        ff:
+          in_size: 256
+          hidden_size: 256
+          out_size: 256
+
+    m_layers_agent:
+      - self_atten:
+          type: "DotProdMultiHead"
+          in_size: 256
+          out_size: 256
+          head_num: 1
+        ff:
+          in_size: 256
+          hidden_size: 256
+          out_size: 256
+
+    n_layers_agent2staticrg_time:
+      - cross_atten:
+          type: "DotProdMultiHead"
+          src_size: 256
+          dst_size: 256
+          out_size: 256
+          head_num: 1
+        ff:
+          in_size: 256
+          hidden_size: 256
+          out_size: 256
+
+    o_layers_agent2dynamicrg_time:
+      - cross_atten:
+          type: "DotProdMultiHead"
+          src_size: 256
+          dst_size: 256
+          out_size: 256
+          head_num: 1
+        ff:
+          in_size: 256
+          hidden_size: 256
+          out_size: 256
+
+    p_layers_time:
+      - self_atten:
+          type: "DotProdMultiHead"
+          in_size: 256
+          out_size: 256
+          head_num: 1
+        ff:
+          in_size: 256
+          hidden_size: 256
+          out_size: 256
+
+    q_layers_agent:
+      - self_atten:
+          type: "DotProdMultiHead"
+          in_size: 256
+          out_size: 256
+          head_num: 1
+        ff:
+          in_size: 256
+          hidden_size: 256
+          out_size: 256
+
+  trajectory_decoder:
+    type: "TrajDecoderSceneTransformer"
+    future_num: 6
+
+    t_layers_mlp:
+      - in_size: 262 # 256 + F
+        hidden_size: 256
+        norm_type: "BN"
+        active_func: "ReLU"
+      - in_size: 256
+        hidden_size: 256
+        norm_type: "BN"
+        active_func: "none"
+
+    u_layers_time:
+      - self_atten:
+          type: "DotProdMultiHead"
+          in_size: 256
+          out_size: 256
+          head_num: 1
+        ff:
+          in_size: 256
+          hidden_size: 256
+          out_size: 256
+
+    v_layers_agent:
+      - self_atten:
+          type: "DotProdMultiHead"
+          in_size: 256
+          out_size: 256
+          head_num: 1
+        ff:
+          in_size: 256
+          hidden_size: 256
+          out_size: 256
+
+    w_layers_time:
+      - self_atten:
+          type: "DotProdMultiHead"
+          in_size: 256
+          out_size: 256
+          head_num: 1
+        ff:
+          in_size: 256
+          hidden_size: 256
+          out_size: 256
+
+    x_layers_agent:
+      - self_atten:
+          type: "DotProdMultiHead"
+          in_size: 256
+          out_size: 256
+          head_num: 1
+        ff:
+          in_size: 256
+          hidden_size: 256
+          out_size: 256
+
+    y_layer_norm:
+       feature_dim: 256
+
+    z1_layers_mlp:
+      - in_size: 512
+        hidden_size: 256
+        norm_type: "BN"
+        active_func: "ReLU"
+      - in_size: 256
+        hidden_size: 1
+        norm_type: "BN"
+        active_func: "none"
+
+    z2_layers_mlp:
+      - in_size: 256
+        hidden_size: 256
+        norm_type: "BN"
+        active_func: "ReLU"
+      - in_size: 256
+        hidden_size: 2
+        norm_type: "none"
+        active_func: "none"

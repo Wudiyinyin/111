@@ -1,0 +1,29 @@
+fsd_processor:
+  # database
+  cache_compress_lvl: 5
+  db_process_num: 128
+  adc_id: -1
+
+  # feature
+  obstacle_polyline_num: 16 # 后续可尝试12/8
+  lane_polyline_num: 24
+  bound_polyline_num: 24
+
+  default_history_num: 20 # 后续可尝试16
+  min_history_num: 3 # less than 3 frame, drop out
+  lane_vector_length: 2 # 2m/vector
+  default_lane_vector_num: 24 # 24 vector/lane_polyline
+  lane_vector_dim: 16
+  obs_vector_dim: 32
+
+  forward_dist: 120
+  back_dist: -60
+  left_dist: -15
+  right_dist: 15
+
+  # label
+  output_frame_num: 10 # 3s 0.3s/point
+  pred_time_length: 3.0
+  frame_time_reso: 0.1
+  cutin_class_num: 4 # keep lane / cut left / cut right / unknown
+  using_occupy_flag: True

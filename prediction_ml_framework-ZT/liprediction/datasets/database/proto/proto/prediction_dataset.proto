@@ -1,0 +1,80 @@
+syntax = "proto3";
+
+package artemis.proto.prediction.dataset;
+
+import "geometry.proto";
+
+enum ActorType{
+  Vehicle = 0;
+  Bicycle = 1;
+  Pedestrain= 2;
+  Other = 3;
+}
+
+message ActorState{
+  int64 time_us = 1;
+  math.Vector2f pos=2;
+  float rot =3;
+  math.Vector2f vel = 4;
+  float omega = 5;
+  math.Vector2f shape = 6;
+}
+
+message Trajectory{
+  ActorType type = 1;
+  int32 offset = 2; // start step offset of each trajectory, agent's offset is always 0
+  repeated ActorState states = 3;
+}
+
+// a sequence of sample from the same car
+message Sequence{
+  string region = 1;
+  repeated Trajectory trajectories = 2;
+}
+
+message LaneNodeGlobalId{
+  int32 tile_id = 1;
+  int32 item_id = 2;
+  int32 segment_id = 3;
+}
+
+message LaneNodeAttribute{
+  math.Vector2f start = 1;
+  math.Vector2f end = 2;
+}
+
+message LaneNode{
+  LaneNodeGlobalId global_id = 1;
+  int32 local_id = 2;
+  LaneNodeAttribute attribute = 3;
+  repeated int32 predecessors = 4;
+  repeated int32 successors = 5;
+  int32 left_neighbour = 6;
+  int32 right_neighbour = 7;
+  int32 father_component = 8;
+}
+
+message LaneComponent{
+  int32 id=1;
+  repeated int32 son_nodes=2;
+  repeated int32 predecessors =3;
+  repeated int32 successors = 4;
+}
+
+message LaneGraph{
+  repeated LaneNode lane_nodes = 1;
+  repeated LaneComponent lane_components = 2;
+}
+
+message Sample{
+  repeated Trajectory trajectories = 1;
+  LaneGraph lane_graph = 2;
+  int32 attention = 3; // attention node index
+  int32 intention = 4; // intention node index
+}
+
+message Metadata{
+  repeated string sequence_name_list = 1; // all the sequence database contains
+  repeated string sample_name_list = 2; // all the sample databse contains
+}
+

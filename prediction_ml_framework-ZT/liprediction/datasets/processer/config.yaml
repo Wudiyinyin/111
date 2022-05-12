@@ -1,0 +1,69 @@
+processer:
+  phase: "train" # "train" "val" "test"
+  train:
+    # time processer
+    min_history_size: 1
+    max_history_size: 11
+    min_future_size: 30
+    max_future_size: 80
+    scene_sample_start_seq_num: 10 # the start sample index of the scene (curr frame)
+    scene_sample_interval: 90 # from scene_sample_start_seq_num + n*scene_sample_interval
+    # space processer
+    select_agent_strategy: "predict_id"  # all: all obstacle  predict_id: obstacle in predict_id
+    check_predict_id: False
+    min_move_distance: 0
+
+  val:
+    # time processer
+    min_history_size: 1
+    max_history_size: 11
+    min_future_size: 0
+    max_future_size: 80
+    scene_sample_start_seq_num: 10 # the start sample index of the scene (curr frame)
+    scene_sample_interval: 90 # from scene_sample_start_seq_num + n*scene_sample_interval
+    # space processer
+    select_agent_strategy: "predict_id"  # all: all obstacle  predict_id: obstacle in predict_id
+    check_predict_id: True
+    min_move_distance: 0
+
+  test:
+    # time processer
+    min_history_size: 1
+    max_history_size: 11
+    min_future_size: 0
+    max_future_size: 0
+    scene_sample_start_seq_num: 10 # the start sample index of the scene (curr frame)
+    scene_sample_interval: 90 # from scene_sample_start_seq_num + n*scene_sample_interval
+    # space processer
+    select_agent_strategy: "predict_id"  # all: all obstacle  predict_id: obstacle in predict_id
+    check_predict_id: True
+    min_move_distance: 0
+
+  # feature processer
+  # actor future shape is [actor_limit,    actor_future_limit,  actor_feature_len]
+  # actor shape is        [actor_limit,    actor_history_limit, actor_feature_len]
+  # map shape is          [polylines,      lane_vector_limit,   lane_feature_len]
+  # limit of 0 axis
+  lane_center_polyline_limit: 256 # max_size of polylines
+  lane_boundary_polyline_limit: 512 # max_size of polylines
+  road_boundary_polyline_limit: 128 # max_size of polylines
+  polygon_polyline_limit: 128 # max_size of polylines
+  actor_limit: 33  # max_size of actors
+  # limit of 1 axis
+  actor_future_limit: 80
+  actor_history_limit: 32
+  lane_vector_limit: 32
+  # limit of 3 axis
+  lane_feature_len: 16
+  actor_feature_len: 16
+
+  high_reso_dim: 144
+  high_reso: 1.0
+
+  # database
+  sample_database_folder: ""
+  sample_list_file: ""
+  cache_database_folder: ""
+  cache_worker_num: -2 # multi thread for single db, single_thred: -2, multi_thread_max_cpu_num: -1, multi_thread_custom_cpu_num: n
+  cache_compress_lvl: 5
+  db_process_num: 128 # multi process for multi db, 1 : use single process, -1 : use all_cpu for file multi process

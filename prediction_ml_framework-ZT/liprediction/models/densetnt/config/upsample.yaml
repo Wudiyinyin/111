@@ -1,0 +1,188 @@
+global: !include global.yaml
+
+training:
+  sample_database_folder: "/home/xuleimeng/work/Argoverse/train"
+  sample_list_file: "/home/xuleimeng/work/Argoverse/train.txt"
+  cache_database_folder: "/home/xuleimeng/work/Argoverse_transformed/train"
+  cache_worker_num: 16
+  cache_compress_lvl: 5
+  batch_size: 32
+  loader_worker_num: 4
+  epoch: 80
+
+validation:
+  sample_database_folder: "/media/kunzhan/LocalFileSystem/Argoverse/val"
+  sample_list_file: "/media/kunzhan/LocalFileSystem/Argoverse/val.txt"
+  cache_database_folder: "/media/kunzhan/LocalFileSystem/Argoverse_transformed/val"
+  cache_worker_num: 16
+  cache_compress_lvl: 5
+  batch_size: 32
+  loader_worker_num: 4
+  check_interval: 1.0
+  limit_batches: 1.0
+
+test:
+  sample_database_folder: "/home/xuleimeng/work/Argoverse/val"
+  sample_list_file: "/home/xuleimeng/work/Argoverse/val.txt"
+  cache_database_folder: "/home/xuleimeng/work/Argoverse_transformed/val"
+  cache_worker_num: 16
+  cache_compress_lvl: 5
+  batch_size: 32
+  loader_worker_num: 4
+  plot: False
+  plot_miss: True
+  plot_out_folder: "/tmp"
+
+optim:
+  init_lr: 0.001
+  step_size: 5
+  step_factor: 0.6
+  gradient_clip_val:  # empty (means None) or float num
+  gradient_clip_algorithm: "norm"
+
+loss:
+  alpha: 0
+  intention_loss_wgt: 0.5
+  offset_loss_wgt: 0.7
+  traj_loss_wgt: 1
+
+transform:
+  agent_tag: 0.0
+  obstacle_tag: -1.0
+  lane_tag: 1.0
+  cluster_size: 19
+  obs_horizon: 20
+  actor_limit: 32
+  lane_limit: 128
+  low_reso_dim: 18
+  low_reso: 8.0
+  high_reso_dim: 144
+  high_reso: 1.0
+  range: 72.0
+  mask: True
+  rot_present: True
+  vector_size: 7
+
+model:
+  type: 8
+  preprocessor:
+    type: "AgentCoord"
+    rot_present: True
+
+  context_encoder:
+    type: "VectorNet"
+
+    cluster_layers:
+      - in_size: 7
+        hidden_size: 64
+      - in_size: 128
+        hidden_size: 64
+      - in_size: 128
+        hidden_size: 64
+      - in_size: 128
+        hidden_size: 64
+
+    encoder_layers:
+      - self_atten:
+          type: "DotProdMultiHead"
+          in_size: 64
+          out_size: 64
+          head_num: 1
+        ff:
+          in_size: 64
+          hidden_size: 64
+          out_size: 64
+
+  intention_decoder:
+    type: "IntentionDecoderImageUpsampler"
+    low_dim: 18
+    low_reso: 8.0
+    high_dim: 144
+    high_reso: 1.0
+    intention_dropout: 0.1
+
+    intention_decoder_layers:
+      - cross_atten:
+          type: "DotProdMultiHead"
+          src_size: 64
+          dst_size: 64
+          out_size: 64
+          head_num: 1
+        ff:
+          in_size: 64
+          hidden_size: 64
+          out_size: 64
+
+    pix_embeding:
+      in_size: 2
+      hidden_size: 64
+      out_size: 64
+
+    upsample_layers:
+      - in_channels: 64
+        out_channels: 32
+        out_size: 36
+        kernel_size: 4
+        stride: 2
+        padding: 1
+        out_padding: 0
+        dropout: 0.1
+      - in_channels: 32
+        out_channels: 16
+        out_size: 72
+        kernel_size: 4
+        stride: 2
+        padding: 1
+        out_padding: 0
+        dropout: 0.0
+      - in_channels: 16
+        out_channels: 8
+        out_size: 144
+        kernel_size: 4
+        stride: 2
+        padding: 1
+        out_padding: 0
+        dropout: 0.0
+
+    intention_prediction:
+      in_size: 8
+      hidden_size: 8
+      out_size: 3
+
+  trajectory_decoder:
+    type: "TrajDecoderMlp"
+    traj_dropout: 0.0
+    pred_horizon: 30
+
+    traj_embeding:
+      in_size: 4
+      hidden_size: 32
+      out_size: 32
+
+    traj_decoder_layers:
+      - cross_atten:
+          type: "DotProdMultiHead"
+          src_size: 64
+          dst_size: 32
+          out_size: 32
+          head_num: 1
+        ff:
+          in_size: 32
+          hidden_size: 32
+          out_size: 32
+
+    traj_prediction:
+      in_size: 66
+      hidden_size: 64
+      out_size: 60
+
+  intention_sampler:
+    type: "ImageCandi"
+    kernel_size: 3
+    candi_num: 4
+    thresh: 0.05
+    dim: 144
+    reso: 1.0
+
+  postprocessor:
+    type: "AgentCoord"

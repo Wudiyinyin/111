@@ -1,0 +1,5 @@
+obs_horizon: 20
+pred_horizon: 30
+attention_radius: 10.0
+log_every_n_steps: 1
+flush_log_every_n_steps: 5

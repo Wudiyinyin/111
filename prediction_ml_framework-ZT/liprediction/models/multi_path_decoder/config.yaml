@@ -1,0 +1,157 @@
+# Copyright (c) 2021 Li Auto Company. All rights reserved.
+
+model_name: MultiPathDecoderPredictor
+
+log_every_n_steps: 10
+
+training:
+  sample_database_folder: ""
+  batch_size: 32
+  loader_worker_num: 16
+  epoch: 20
+
+validation:
+  sample_database_folder: ""
+  batch_size: 32
+  loader_worker_num: 16
+  check_interval: 0.2
+  limit_batches: 0.2
+
+test:
+  sample_database_folder: ""
+  batch_size: 32
+  loader_worker_num: 16
+  test_result_pkl_dir: ""
+
+transform:
+  train:
+    mask_lt_8s_labels: True
+
+  val:
+    mask_lt_8s_labels: True
+
+  test:
+    mask_lt_8s_labels: False
+
+loss:
+  prob_loss_wgt: 0.2
+  traj_gmm_loss_wgt: 0.05
+  traj_pt_loss_wgt: 0.8
+
+optim:
+  init_lr: 0.0002
+  step_size: 2
+  step_factor: 0.5
+  gradient_clip_val:  # empty (means None) or float num
+  gradient_clip_algorithm: "norm"
+
+model:
+  hidden_size: &hidden_size 128
+  hidden_size_2: &hidden_size_2 256
+  hidden_size_4: &hidden_size_4 512
+  mcg_stacked_num: &mcg_stacked_num 5
+
+  traj_downsample: 5  # Downsample rate must be >= 1, if num == 5, trajectory point is 0.5s/step
+
+  context_encoder:
+    type: "ContextEncoderMultiPathPro"
+
+    obs_encoder:
+      embedding:
+        in_size: 16 # fixed input feature size
+        hidden_size: 64 # hidden_size * 0.5
+        norm_type: "LN"
+        active_func: "ReLU"
+
+      lstm:
+        in_size: 64 # hidden_size * 0.5
+        hidden_size: 64 # hidden_size * 0.5
+        layer_num: 1
+
+    obs_diff_encoder:
+      embedding:
+        in_size: 16 # fixed input feature size
+        hidden_size: 64 # hidden_size * 0.25
+        norm_type: "LN"
+        active_func: "ReLU"
+
+      lstm:
+        in_size: 64 # hidden_size * 0.25
+        hidden_size: 64 # hidden_size * 0.25
+        layer_num: 1
+
+    lane_encoder:
+      - in_size: 16 # fixed input feature size
+        hidden_size: *hidden_size_2
+      - in_size: *hidden_size_4
+        hidden_size: *hidden_size_2
+      - in_size: *hidden_size_4
+        hidden_size: *hidden_size_2
+
+    agent_history_encoder:
+      stacked_num: *mcg_stacked_num
+      feature_size: *hidden_size
+      pooling: "max"
+
+    interaction_encoder:
+      stacked_num: *mcg_stacked_num
+      feature_size: *hidden_size
+      pooling: "max"
+
+    road_graph_encoder:
+      stacked_num: *mcg_stacked_num
+      feature_size: *hidden_size_2
+      pooling: "max"
+
+  trajectory_decoder:
+    type: "TrajDecoderMultiPathDecoder"
+
+    num_of_query: 6
+    query_vector_dim: *hidden_size_4
+
+    predictor_mcg_decoder:
+      stacked_num: *mcg_stacked_num
+      feature_size: *hidden_size_4
+      pooling: "max"
+
+    predictor_mlp_decoder:
+      in_size: *hidden_size_4
+      hidden_size: *hidden_size_4
+      norm_type: "LN"
+      active_func: "ReLU"
+
+    predictor_mlp_decoder:
+      in_size: *hidden_size_4
+      hidden_size: *hidden_size_4
+      norm_type: "LN"
+      active_func: "ReLU"
+
+    hidden_mlp_layer:
+      in_size: *hidden_size_4
+      hidden_size: *hidden_size_2
+      norm_type: "LN"
+      active_func: "ReLU"
+
+    prob_mlp_layer:
+      in_size: 768  # hidden_size_4 + hidden_size_2
+      hidden_size: 1
+      norm_type: "LN"
+      active_func: "none"
+
+    traj_pt_mlp_layer:
+      in_size: 768  # hidden_size_4 + hidden_size_2
+      hidden_size: 32  # 80 / traj_downsample * 2
+      norm_type: "LN"
+      active_func: "none"
+
+    traj_sigma_mlp_layer:
+      in_size: 768  # hidden_size_4 + hidden_size_2
+      hidden_size: 32  # 80 / traj_downsample * 2
+      norm_type: "LN"
+      active_func: "ReLU"
+
+    traj_rho_mlp_layer:
+      in_size: 768  # hidden_size_4 + hidden_size_2
+      hidden_size: 16  # 80 / traj_downsample * 1
+      norm_type: "LN"
+      active_func: "Tanh"

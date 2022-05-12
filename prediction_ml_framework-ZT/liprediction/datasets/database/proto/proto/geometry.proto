@@ -1,0 +1,106 @@
+syntax = "proto3";
+
+package artemis.proto.prediction.math;
+
+message Vector3i {
+  int64 x = 1;
+  int64 y = 2;
+  int64 z = 3;
+}
+
+message Polyline {
+  repeated Vector3d points = 1;
+}
+
+message Polygon {
+  repeated Vector3d points = 1;
+}
+
+message Points {
+  repeated Vector3d points = 1;
+}
+
+message Vector2d {
+  double x = 1;
+  double y = 2;
+}
+
+message Vector2f {
+  float x = 1;
+  float y = 2;
+}
+
+message Vector3d {
+  double x = 1;
+  double y = 2;
+  double z = 3;
+}
+
+message Vector3f {
+  float x = 1;
+  float y = 2;
+  float z = 3;
+}
+
+message Matrix2d {
+  double e00 = 1;
+  double e01 = 2;
+  double e10 = 3;
+  double e11 = 4;
+}
+
+message Matrix2f {
+  float e00 = 1;
+  float e01 = 2;
+  float e10 = 3;
+  float e11 = 4;
+}
+
+message Matrix3d {
+  double e00 = 1;
+  double e01 = 2;
+  double e02 = 3;
+  double e10 = 4;
+  double e11 = 5;
+  double e12 = 6;
+  double e20 = 7;
+  double e21 = 8;
+  double e22 = 9;
+}
+
+message Matrix3f {
+  float e00 = 1;
+  float e01 = 2;
+  float e02 = 3;
+  float e10 = 4;
+  float e11 = 5;
+  float e12 = 6;
+  float e20 = 7;
+  float e21 = 8;
+  float e22 = 9;
+}
+
+message Quaterniond {
+  double w = 1;
+  double x = 2;
+  double y = 3;
+  double z = 4;
+}
+
+message Quaternionf {
+  float w = 1;
+  float x = 2;
+  float y = 3;
+  float z = 4;
+}
+
+message Transformation3d {
+  Quaterniond rotation = 1;
+  Vector3d translation = 2;
+}
+
+message Transformation3f {
+  Quaternionf rotation = 1;
+  Vector3f translation = 2;
+}
+

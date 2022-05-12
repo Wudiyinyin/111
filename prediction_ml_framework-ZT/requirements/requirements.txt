@@ -1,0 +1,16 @@
+torch
+torchvision
+torchaudio
+pytorch_lightning
+joblib
+lmdb
+matplotlib
+numpy
+onnx
+protobuf
+waymo_open_dataset_tf_2_6_0
+tqdm
+onnx_simplifier
+PyYAML
+pyyaml-include
+scipy

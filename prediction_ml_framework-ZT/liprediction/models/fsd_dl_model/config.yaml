@@ -1,0 +1,168 @@
+# Copyright (c) 2021 Li Auto Company. All rights reserved.
+
+model_name: FSDPredictor
+
+log_every_n_steps: 10
+
+training:
+  sample_database_folder: ""
+  batch_size: 32
+  loader_worker_num: 16
+  epoch: 20
+
+validation:
+  sample_database_folder: ""
+  batch_size: 32
+  loader_worker_num: 16
+  check_interval: 0.2
+  limit_batches: 0.2
+
+test:
+  sample_database_folder: ""
+  batch_size: 64
+  loader_worker_num: 16
+  test_result_pkl_dir: ""
+
+loss:
+  cutin_cls_loss_wgt: 1.0
+  is_cutin_loss_wgt: 1.0
+  traj_reg_loss_wgt: 1.0
+
+optim:
+  init_lr: 0.001
+  step_size: 3
+  step_factor: 0.5
+
+model:
+  hidden_size: &hidden_size 32
+  hidden_size_2: &hidden_size_2 64
+  hidden_size_3: &hidden_size_3 96
+  mcg_stacked_num: &mcg_stacked_num 5
+  cutin_cls_num: &cutin_cls_num 4
+  is_cutin_num: &is_cutin_num 1
+  point_num: &point_num 10
+
+  context_encoder:
+    type: "ContextEncoderFSD"
+
+    obs_cluster_layers:
+      - in_size: 16
+        hidden_size: *hidden_size
+      - in_size: *hidden_size_2
+        hidden_size: *hidden_size
+      - in_size: *hidden_size_2
+        hidden_size: *hidden_size
+
+    lane_cluster_layers:
+      - in_size: 8
+        hidden_size: *hidden_size
+      - in_size: *hidden_size_2
+        hidden_size: *hidden_size
+      - in_size: *hidden_size_2
+        hidden_size: *hidden_size
+
+    interaction_type: 'mcg' # attention
+
+    a2o_cross_mcg:
+      stacked_num: *mcg_stacked_num
+      feature_size: *hidden_size
+      pooling: "max"
+
+    affine:
+      in_size: *hidden_size_2
+      out_size: *hidden_size
+
+    a2l_cross_mcg:
+      stacked_num: *mcg_stacked_num
+      feature_size: *hidden_size
+      pooling: "max"
+
+
+    a2o_cross_attention:
+      cross_atten:
+        type: "DotProdMultiHead"
+        in_size: *hidden_size
+        out_size: *hidden_size
+        head_num: 1
+      ff:
+        in_size: *hidden_size
+        hidden_size: *hidden_size
+        out_size: *hidden_size
+
+    a2l_cross_attention:
+      cross_atten:
+        type: "DotProdMultiHead"
+        in_size: *hidden_size
+        out_size: *hidden_size
+        head_num: 1
+      ff:
+        in_size: *hidden_size
+        hidden_size: *hidden_size
+        out_size: *hidden_size   
+
+  intention_decoder:
+    type: "IntentionDecoderFSDCutin"
+
+    cutin_cls_res_layer:
+      in_size: *hidden_size_3
+      hidden_size: *hidden_size_3
+
+    is_cutin_res_layer:
+      in_size: *hidden_size_3
+      hidden_size: *hidden_size_3  
+
+    cutin_cls_1s_layer:
+      in_size: *hidden_size_3
+      hidden_size: *cutin_cls_num
+      norm_type: "none"
+      active_func: "softmax"  
+
+    cutin_cls_2s_layer:
+      in_size: *hidden_size_3
+      hidden_size: *cutin_cls_num
+      norm_type: "none"
+      active_func: "softmax" 
+
+    cutin_cls_3s_layer:
+      in_size: *hidden_size_3
+      hidden_size: *cutin_cls_num
+      norm_type: "none"
+      active_func: "softmax" 
+
+    is_cutin_1s_layer:
+      in_size: *hidden_size_3
+      hidden_size: *is_cutin_num
+      norm_type: "none"
+      active_func: "sigmoid" 
+
+    is_cutin_2s_layer:
+      in_size: *hidden_size_3
+      hidden_size: *is_cutin_num
+      norm_type: "none"
+      active_func: "sigmoid"   
+
+    is_cutin_3s_layer:
+      in_size: *hidden_size_3
+      hidden_size: *is_cutin_num
+      norm_type: "none"
+      active_func: "sigmoid"  
+
+  trajectory_decoder:
+    type: "TrajDecoderFSD"
+    
+    point_num: *point_num
+
+    res_affine:
+      in_size: *hidden_size_3
+      hidden_size: *hidden_size_3
+    mlp_decoder:
+      in_size: *hidden_size_3
+      hidden_size: *point_num * 2
+      norm_type: "none"
+      active_func: "none" 
+
+
+
+
+
+

@@ -1,0 +1,183 @@
+# Copyright (c) 2021 Li Auto Company. All rights reserved.
+
+model_name: MultiPathProPredictor
+
+log_every_n_steps: 10
+
+training:
+  sample_database_folder: ""
+  batch_size: 32
+  loader_worker_num: 16
+  epoch: 20
+
+validation:
+  sample_database_folder: ""
+  batch_size: 32
+  loader_worker_num: 16
+  check_interval: 0.2
+  limit_batches: 0.2
+
+test:
+  sample_database_folder: ""
+  batch_size: 32
+  loader_worker_num: 16
+  test_result_pkl_dir: ""
+
+transform:
+  train:
+    mask_lt_8s_labels: True
+
+  val:
+    mask_lt_8s_labels: True
+
+  test:
+    mask_lt_8s_labels: False
+
+loss:
+  intention_3s_loss_wgt: 0.1
+  intention_5s_loss_wgt: 0.1
+  intention_8s_loss_wgt: 0.6
+  traj_loss_wgt: 0.2
+
+optim:
+  init_lr: 0.001
+  step_size: 3
+  step_factor: 0.3
+  gradient_clip_val:  # empty (means None) or float num
+  gradient_clip_algorithm: "norm"
+
+model:
+  hidden_size: &hidden_size 128
+  hidden_size_2: &hidden_size_2 256
+  hidden_size_4: &hidden_size_4 512
+  mcg_stacked_num: &mcg_stacked_num 5
+  traj_downsample: 5  # Downsample rate must be >= 1, if num == 5, trajectory point is 0.5s/step
+
+  decoder_type: "dense_tnt_decoder"
+
+  context_encoder:
+    type: "ContextEncoderMultiPathPro"
+
+    obs_encoder:
+      embedding:
+        in_size: 16 # fixed input feature size
+        hidden_size: 64 # hidden_size * 0.5
+        norm_type: "LN"
+        active_func: "ReLU"
+
+      lstm:
+        in_size: 64 # hidden_size * 0.5
+        hidden_size: 64 # hidden_size * 0.5
+        layer_num: 1
+
+    obs_diff_encoder:
+      embedding:
+        in_size: 16 # fixed input feature size
+        hidden_size: 64 # hidden_size * 0.25
+        norm_type: "LN"
+        active_func: "ReLU"
+
+      lstm:
+        in_size: 64 # hidden_size * 0.25
+        hidden_size: 64 # hidden_size * 0.25
+        layer_num: 1
+
+    lane_encoder:
+      - in_size: 16
+        hidden_size: *hidden_size_2
+      - in_size: *hidden_size_4
+        hidden_size: *hidden_size_2
+      - in_size: *hidden_size_4
+        hidden_size: *hidden_size_2
+
+    agent_history_encoder:
+      stacked_num: *mcg_stacked_num
+      feature_size: *hidden_size
+      pooling: "max"
+
+    interaction_encoder:
+      stacked_num: *mcg_stacked_num
+      feature_size: *hidden_size
+      pooling: "max"
+
+    road_graph_encoder:
+      stacked_num: *mcg_stacked_num
+      feature_size: *hidden_size_2
+      pooling: "max"
+
+  interaction_decoder:
+    type: "IntentionDecoderMultiPathPro"
+
+    agent_feature_size: *hidden_size
+
+    mlp_layers:
+      - in_size: 2
+        hidden_size: *hidden_size
+        norm_type: "LN"
+        active_func: "ReLU"
+      - in_size: *hidden_size_2
+        hidden_size: *hidden_size_2
+        norm_type: "LN"
+        active_func: "ReLU"
+      - in_size: 384  # hidden_size + hidden_size_2
+        hidden_size: *hidden_size_4
+        norm_type: "LN"
+        active_func: "ReLU"
+
+    candi_target_mcg_encoder:
+      stacked_num: *mcg_stacked_num
+      feature_size: *hidden_size_4
+      pooling: "max"
+
+    3s_res_mlp_layer:
+      in_size: 1152  # hidden_size + hidden_size_4 + hidden_size_4
+      hidden_size: *hidden_size_4
+      linear_hidden_size: 1664 # in_size + layer_hidden_size
+      out_size: 1
+
+    5s_res_mlp_layer:
+      in_size: 1152  # hidden_size + hidden_size_4 + hidden_size_4
+      hidden_size: *hidden_size_4
+      linear_hidden_size: 1664 # in_size + layer_hidden_size
+      out_size: 1
+
+    8s_res_mlp_layer:
+      in_size: 1152  # hidden_size + hidden_size_4 + hidden_size_4
+      hidden_size: *hidden_size_4
+      linear_hidden_size: 1664 # in_size + layer_hidden_size
+      out_size: 1
+
+  trajectory_decoder:
+    type: "TrajDecoderMultiPathPro"
+
+    agent_feature_size: *hidden_size
+
+    mlp_layers:
+      - in_size: 2
+        hidden_size: *hidden_size
+        norm_type: "LN"
+        active_func: "ReLU"
+      - in_size: *hidden_size
+        hidden_size: *hidden_size_2
+        norm_type: "LN"
+        active_func: "ReLU"
+      - in_size: *hidden_size_2
+        hidden_size: *hidden_size_4
+        norm_type: "LN"
+        active_func: "ReLU"
+
+    target_mcg_encoder:
+      stacked_num: *mcg_stacked_num
+      feature_size: *hidden_size_4
+      pooling: "max"
+
+    res_mlp_layer:
+      in_size: 1152  # hidden_size + hidden_size_4 + hidden_size_4
+      hidden_size: *hidden_size_4
+      linear_hidden_size: 1664 # in_size + layer_hidden_size
+      out_size: 32  # 80 / traj_downsample * 2
+
+  intention_sampler:
+    type: "NMS"
+    modality_num: 6
+    nms_threshold: 5.0

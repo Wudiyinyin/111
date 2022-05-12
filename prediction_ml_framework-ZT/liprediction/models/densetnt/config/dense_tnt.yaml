@@ -1,0 +1,213 @@
+# Copyright (c) 2021 Li Auto Company. All rights reserved.
+
+model_name: DenseTNTPredictor
+
+log_every_n_steps: 10
+
+training:
+  sample_database_folder: ""
+  batch_size: 32
+  loader_worker_num: 16
+  epoch: 10
+
+validation:
+  sample_database_folder: ""
+  batch_size: 32
+  loader_worker_num: 16
+  check_interval: 0.2
+  limit_batches: 0.2
+
+test:
+  sample_database_folder: ""
+  batch_size: 32
+  loader_worker_num: 16
+  test_result_pkl_dir: ""
+
+show _badcase:
+  plot_badcase: False
+  only_plot_top_K_bad: 2 # positive int stands for K, negative int and zero means plot all bad cases
+  plot_with_metric: "minADE" # para: "minADE" "minFDE" "miss"
+  final_timestep: "8s" # para: "3s" "5s" "8s"
+  minADE_threshold: 1
+  minFDE_threshold: 1
+  save_fig: False
+
+transform:
+  train:
+    mask_lt_8s_labels: True
+
+  val:
+    mask_lt_8s_labels: True
+
+loss:
+  intention_3s_loss_wgt: 0.1
+  intention_5s_loss_wgt: 0.1
+  intention_8s_loss_wgt: 0.6
+  traj_loss_wgt: 0.2
+
+optim:
+  init_lr: 0.001
+  step_size: 5
+  step_factor: 0.3
+  gradient_clip_val:  # empty (means None) or float num
+  gradient_clip_algorithm: "norm"
+
+model:
+  hidden_size: &hidden_size 64
+  hidden_size_2: &hidden_size_2 128
+  hidden_size_4: &hidden_size_4 256
+
+  preprocessor:
+    type: "AgentCoord"
+    rot_present: False
+
+  context_encoder:
+    type: "ContextEncoderDenseTNT"
+
+    obs_cluster_layers:
+      - in_size: 16
+        hidden_size: *hidden_size
+      - in_size: *hidden_size_2
+        hidden_size: *hidden_size
+      - in_size: *hidden_size_2
+        hidden_size: *hidden_size
+
+    lane_cluster_layers:
+      - in_size: 16
+        hidden_size: *hidden_size
+      - in_size: *hidden_size_2
+        hidden_size: *hidden_size
+      - in_size: *hidden_size_2
+        hidden_size: *hidden_size
+
+    cross_attention_encoder_layers:
+      - cross_atten:
+          type: "DotProdMultiHead"
+          src_size: *hidden_size_2
+          dst_size: *hidden_size
+          out_size: *hidden_size
+          head_num: 1
+        ff:
+          in_size: *hidden_size
+          hidden_size: *hidden_size
+          out_size: *hidden_size
+
+    a2a_self_attention_encoder_layers:
+      - self_atten:
+          type: "DotProdMultiHead"
+          in_size: *hidden_size
+          out_size: *hidden_size
+          head_num: 1
+        ff:
+          in_size: *hidden_size
+          hidden_size: *hidden_size
+          out_size: *hidden_size
+
+    l2l_self_attention_encoder_layers:
+      - self_atten:
+          type: "DotProdMultiHead"
+          in_size: *hidden_size
+          out_size: *hidden_size
+          head_num: 1
+        ff:
+          in_size: *hidden_size
+          hidden_size: *hidden_size
+          out_size: *hidden_size
+
+    all_self_attention_encoder_layers:
+      - self_atten:
+          type: "DotProdMultiHead"
+          in_size: *hidden_size
+          out_size: *hidden_size
+          head_num: 1
+        ff:
+          in_size: *hidden_size
+          hidden_size: *hidden_size
+          out_size: *hidden_size
+
+  intention_decoder:
+    type: "IntentionDecoderDenseTNT"
+
+    mlp_layers:
+      - in_size: 2
+        hidden_size: *hidden_size
+        norm_type: "LN"
+        active_func: "ReLU"
+      - in_size: *hidden_size_2
+        hidden_size: *hidden_size
+        norm_type: "LN"
+        active_func: "ReLU"
+      - in_size: *hidden_size_2
+        hidden_size: *hidden_size
+        norm_type: "LN"
+        active_func: "ReLU"
+
+    cross_attention_layers:
+      - cross_atten:
+          type: "DotProdMultiHead"
+          src_size: *hidden_size
+          dst_size: *hidden_size
+          out_size: *hidden_size
+          head_num: 1
+        ff:
+          in_size: *hidden_size
+          hidden_size: *hidden_size
+          out_size: *hidden_size
+
+    3s_res_mlp_layer:
+      in_size: 192
+      hidden_size: *hidden_size
+      linear_hidden_size: *hidden_size_4
+      out_size: 1
+
+    5s_res_mlp_layer:
+      in_size: 192
+      hidden_size: *hidden_size
+      linear_hidden_size: *hidden_size_4
+      out_size: 1
+
+    8s_res_mlp_layer:
+      in_size: 192
+      hidden_size: *hidden_size
+      linear_hidden_size: *hidden_size_4
+      out_size: 1
+
+  trajectory_decoder:
+    type: "TrajDecoderDenseTNT"
+
+    mlp_layers:
+      - in_size: 2
+        hidden_size: *hidden_size
+        norm_type: "LN"
+        active_func: "ReLU"
+      - in_size: *hidden_size
+        hidden_size: *hidden_size
+        norm_type: "LN"
+        active_func: "ReLU"
+      - in_size: *hidden_size
+        hidden_size: *hidden_size
+        norm_type: "LN"
+        active_func: "ReLU"
+
+    cross_attention_layers:
+      - cross_atten:
+          type: "DotProdMultiHead"
+          src_size: *hidden_size
+          dst_size: *hidden_size
+          out_size: *hidden_size
+          head_num: 1
+        ff:
+          in_size: *hidden_size
+          hidden_size: *hidden_size
+          out_size: *hidden_size
+
+    res_mlp_layer:
+      in_size: 192
+      hidden_size: *hidden_size
+      linear_hidden_size: *hidden_size_4
+      out_size: 160
+
+  intention_sampler:
+    type: "NMS"
+    modality_num: 6
+    nms_threshold: 5.0
